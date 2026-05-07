@@ -295,7 +295,7 @@ function calcResult(container) {
   res.sort((a, b) => b.score - a.score);
   
   // [수정] 공유용 링크 추가 (배포 후 주소로 바꾸면 돼!)
-  let myLink = "[여기에 너의 웹사이트 주소를 적어줘!]"; 
+  let myLink = "[https://jin-happy-it.github.io/kudos/]"; 
   let shareText = `[🐾 나의 운명 펫 매칭 결과]\n\n나의 운명 1위는.. ${res[0].name}(${res[0].score}%)! ✨\n2위는 ${res[1].name}, 3위는 ${res[2].name}였어!\n\n너도 궁금하다면 지금 확인해봐! 👇\n${myLink}`;
 
   container.innerHTML = `<div class="question">💖 너랑 찰떡궁합 리포트야!</div>`;
