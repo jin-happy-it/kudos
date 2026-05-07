@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐾 내 운명의 펫 찾기</title>
+<style>
+:root {
+  --dog-p: #ff85a1; --cat-p: #a78bfa; --exo-p: #4ade80; --bg: #1e1b4b;
+  --card-bg: rgba(255, 255, 255, 0.12); --accent: #ffdeeb;
+}
+body { margin: 0; font-family: 'Pretendard', -apple-system, sans-serif; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; display: flex; justify-content: center; min-height: 100vh; }
+.app { width: 100%; max-width: 440px; padding: 25px; box-sizing: border-box; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+.intro-page { text-align: center; padding-top: 40px; }
+.intro-page h1 { font-size: 2.2rem; color: var(--accent); text-shadow: 0 0 10px rgba(255,133,161,0.5); }
+.mode-selection { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 25px; }
+.mode-card { background: var(--card-bg); padding: 20px; border-radius: 24px; cursor: pointer; border: 2px solid transparent; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 15px; }
+.mode-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.2); }
+.mode-card.dog { border-color: var(--dog-p); }
+.mode-card.cat { border-color: var(--cat-p); }
+.mode-card.exotic { border-color: var(--exo-p); }
+.mode-card h2 { font-size: 2.5rem; margin: 0; }
+.question { font-size: 19px; font-weight: bold; margin-bottom: 20px; color: var(--accent); line-height: 1.5; }
+.option { background: var(--card-bg); padding: 14px 18px; border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; border: 1.5px solid transparent; font-size: 14px; }
+.option:hover { transform: translateX(5px); background: rgba(255, 255, 255, 0.2); }
+.selected { border-color: var(--dog-p); background: rgba(255, 133, 161, 0.3) !important; }
+.cat-mode .selected { border-color: var(--cat-p); background: rgba(167, 139, 250, 0.3) !important; }
+.exotic-mode .selected { border-color: var(--exo-p); background: rgba(74, 222, 128, 0.3) !important; }
+.card { background: var(--card-bg); padding: 20px; border-radius: 20px; margin-top: 20px; border-left: 6px solid var(--dog-p); backdrop-filter: blur(10px); }
+.cat-mode .card { border-left-color: var(--cat-p); }
+.exotic-mode .card { border-left-color: var(--exo-p); }
+.bar { height: 8px; background: #334155; border-radius: 10px; overflow: hidden; margin: 12px 0; }
+.fill { height: 100%; background: linear-gradient(90deg, var(--dog-p), #fb7185); transition: width 1s ease-in-out; }
+.cat-mode .fill { background: linear-gradient(90deg, var(--cat-p), #f472b6); }
+.exotic-mode .fill { background: linear-gradient(90deg, var(--exo-p), #22c55e); }
+button { width: 100%; padding: 18px; border: none; border-radius: 16px; background: linear-gradient(90deg, var(--dog-p), #fb7185); color: white; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px rgba(255, 133, 161, 0.3); }
+.cat-mode button { background: linear-gradient(90deg, var(--cat-p), #f472b6); }
+.exotic-mode button { background: linear-gradient(90deg, var(--exo-p), #22c55e); }
+.match-box { background: rgba(255, 222, 235, 0.05); border: 1.2px dashed var(--dog-p); padding: 12px; border-radius: 12px; margin-top: 15px; font-size: 13px; line-height: 1.6; }
+.cat-mode .match-box { border-color: var(--cat-p); }
+.exotic-mode .match-box { border-color: var(--exo-p); }
+.wish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 320px; overflow-y: auto; padding-right: 5px; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--dog-p); border-radius: 10px; }
+</style>
+</head>
+<body>
+<div id="content" class="app"></div>
+<script>
+// 데이터 및 질문지는 60종 풀버전 유지 (강아지 20, 고양이 20, 이색동물 20)
+const dogData = [
+  { name: "말티즈", size: "small", activity: 2, shedding: 1, difficulty: 1, look: "cute", fur: "long", personality: ["affectionate", "playful"], info: "하얀 솜사탕 그 자체! ☁️", special: "말티즈는 참지 않지만 너에겐 참을걸? 하얀 솜뭉치 비주얼은 사랑이에요!" },
+  { name: "푸들", size: "small", activity: 4, shedding: 1, difficulty: 1, look: "smart", fur: "curly", personality: ["playful", "affectionate"], info: "똑똑함 1등! 🎓", special: "눈치 백단 똑쟁이라 너의 마음을 찰떡같이 읽어줄 거야!" },
+  { name: "포메라니안", size: "small", activity: 3, shedding: 5, difficulty: 3, look: "cute", fur: "long", personality: ["independent", "playful"], info: "화려한 털과 도도한 매력! 🎀", special: "세상 주인공은 나야 나! 너만 보면 꼬리 살랑살랑~" },
+  { name: "믹스견", size: "medium", activity: 3, shedding: 3, difficulty: 2, look: "cute", fur: "short", personality: ["affectionate", "calm"], info: "세상에 단 하나뿐인 보석! 🌱", special: "유니크함 폭발! 믹스견만의 신비로운 매력에 푹 빠질걸요?" },
+  { name: "치와와", size: "small", activity: 2, shedding: 2, difficulty: 3, look: "cute", fur: "short", personality: ["independent", "affectionate"], info: "작지만 아주 용맹해요 🔥", special: "쪼꼬미라고 무시하면 안 돼! 너를 향한 충성심은 대형견급이라구." },
+  { name: "시츄", size: "small", activity: 1, shedding: 1, difficulty: 1, look: "cute", fur: "long", personality: ["calm", "affectionate"], info: "느긋한 평화주의자 😌", special: "화내는 법이 없는 천사 시츄! 같이 누워서 뒹굴거리기 1등이에요." },
+  { name: "골든리트리버", size: "large", activity: 5, shedding: 5, difficulty: 2, look: "cute", fur: "long", personality: ["affectionate", "playful"], info: "웃음이 예쁜 인절미 🍪", special: "온 세상 사람을 다 사랑하는 마음 넓은 천사 강아지예요!" },
+  { name: "비숑 프리제", size: "small", activity: 4, shedding: 1, difficulty: 2, look: "cute", fur: "curly", personality: ["playful", "affectionate"], info: "동글동글 하이바 외모 🐩", special: "사교성이 좋아 어디서든 사랑받는 분위기 메이커예요." },
+  { name: "요크셔테리어", size: "small", activity: 2, shedding: 1, difficulty: 2, look: "smart", fur: "long", personality: ["independent", "playful"], info: "움직이는 보석 💎", special: "우아한 긴 털이 정말 예뻐! 똑 부러지는 매력이 있는 친구야." },
+  { name: "진돗개", size: "medium", activity: 4, shedding: 4, difficulty: 4, look: "cool", fur: "short", personality: ["independent", "calm"], info: "한 주인만 바라보는 충성심 🇰🇷", special: "늠름하고 멋진 비주얼! 너를 지켜주는 든든한 보디가드가 될 거야." },
+  { name: "스피츠", size: "medium", activity: 4, shedding: 5, difficulty: 3, look: "cute", fur: "long", personality: ["playful", "independent"], info: "집도 아주 잘 지키는 야무진 친구 ❄️", special: "경계심은 조금 있지만, 자기 가족에겐 누구보다 따뜻해!" },
+  { name: "닥스훈트", size: "small", activity: 4, shedding: 2, difficulty: 3, look: "cute", fur: "short", personality: ["playful", "independent"], info: "짧은 다리 긴 허리 🌭", special: "요리조리 뛰어다니는 모습이 정말 사랑스러운 명랑 친구야!" },
+  { name: "웰시코기", size: "medium", activity: 5, shedding: 5, difficulty: 4, look: "cute", fur: "short", personality: ["playful", "affectionate"], info: "치명적인 뒷태 🍑", special: "식빵 같은 궁둥이는 반칙! 같이 뛰놀 준비 됐어?" },
+  { name: "프렌치불독", size: "medium", activity: 2, shedding: 2, difficulty: 3, look: "cute", fur: "short", personality: ["calm", "affectionate"], info: "조용하고 점잖은 매력 🦇", special: "많이 짖지 않아서 좋아! 느긋하게 교감하기 딱 좋은 친구야." },
+  { name: "래브라도리트리버", size: "large", activity: 5, shedding: 4, difficulty: 2, look: "smart", fur: "short", personality: ["affectionate", "playful"], info: "영리하고 사교적인 안내견 출신 🌊", special: "에너지가 넘치는 활동파 리트리버! 너랑 운동하는 걸 제일 좋아할걸?" },
+  { name: "비글", size: "medium", activity: 5, shedding: 3, difficulty: 5, look: "cute", fur: "short", personality: ["playful", "independent"], info: "호기심 많은 사고뭉치 🎾", special: "하루 종일 너랑 놀아도 안 지칠걸? 같이 모험 떠나자!" },
+  { name: "이탈리안 그레이하운드", size: "small", activity: 3, shedding: 1, difficulty: 3, look: "cool", fur: "short", personality: ["calm", "independent"], info: "모델 같은 몸매 🧣", special: "세련되고 시크한 외모! 조용히 너의 곁을 지켜줄 거야." },
+  { name: "시바견", size: "medium", activity: 4, shedding: 5, difficulty: 5, look: "cool", fur: "short", personality: ["independent", "calm"], info: "고집 세지만 빵빵한 볼살 🦊", special: "볼살 한번 만져보고 싶지? 한번 마음을 주면 정말 깊이 믿어줘." },
+  { name: "보더콜리", size: "medium", activity: 5, shedding: 4, difficulty: 5, look: "smart", fur: "long", personality: ["playful", "independent"], info: "지능 1위 천재 강아지 🧠", special: "너랑 같이 훈련하고 소통하는 걸 세상에서 제일 행복해할 거야!" },
+  { name: "사모예드", size: "large", activity: 5, shedding: 5, difficulty: 4, look: "cute", fur: "long", personality: ["affectionate", "playful"], info: "미소 천사 대형견 ❄️", special: "웃는 얼굴만 봐도 힐링되는 마법! 정말 착하고 순한 아이야." }
+];
+
+const catData = [
+  { name: "코리안 숏헤어", size: "medium", activity: 4, shedding: 3, difficulty: 1, look: "cute", fur: "short", personality: ["sociability", "activity"], info: "한국의 정이 듬뿍 담긴 튼튼한 냥이 🇰🇷", special: "영리하고 생명력이 강해서 너랑 아주 오래오래 단짝이 될 거야." },
+  { name: "러시안 블루", size: "medium", activity: 2, shedding: 1, difficulty: 1, look: "smart", fur: "short", personality: ["calm"], info: "에메랄드빛 눈동자 💎", special: "조용하고 차분해서 너의 곁을 그림자처럼 지켜줄 거야!" },
+  { name: "샴", size: "medium", activity: 4, shedding: 1, difficulty: 2, look: "smart", fur: "short", personality: ["sociability"], info: "수다쟁이 끝판왕 🗣️", special: "외로움을 잘 타서 너의 껌딱지가 되어줄 사랑둥이야." },
+  { name: "페르시안", size: "medium", activity: 1, shedding: 4, difficulty: 3, look: "cute", fur: "long", personality: ["calm"], info: "고양이계의 귀부인 👑", special: "조용히 앉아 너를 지켜보는 걸 좋아하는 품격 있는 친구야." },
+  { name: "먼치킨", size: "small", activity: 4, shedding: 2, difficulty: 2, look: "cute", fur: "short", personality: ["sociability", "activity"], info: "애교 많은 사교성 갑 🐾", special: "뒤태만 봐도 심쿵! 너랑 노는 걸 제일 즐거워할걸?" },
+  { name: "뱅갈", size: "large", activity: 5, shedding: 2, difficulty: 4, look: "cool", fur: "short", personality: ["activity"], info: "표범을 닮은 멋진 무늬 🐆", special: "집안을 정글처럼 누비는 멋쟁이! 사냥놀이 1등이야." },
+  { name: "랙돌", size: "large", activity: 1, shedding: 4, difficulty: 2, look: "cute", fur: "long", personality: ["sociability"], info: "인형처럼 축 늘어지는 애교냥 ☁️", special: "너의 품을 세상에서 제일 안전한 곳이라고 믿는 순둥이야." },
+  { name: "스코티시 폴드", size: "medium", activity: 2, shedding: 2, difficulty: 3, look: "cute", fur: "short", personality: ["sociability", "calm"], info: "동글동글 순둥한 매력 🧸", special: "사람을 정말 좋아해서 어디든 졸졸 따라다니는 개냥이야." },
+  { name: "아비시니안", size: "medium", activity: 5, shedding: 1, difficulty: 2, look: "smart", fur: "short", personality: ["activity"], info: "우아한 몸매의 똑똑이 🎓", special: "활동적이고 지적이야! 너랑 두뇌 게임하는 걸 즐길 거야." },
+  { name: "노르웨이 숲", size: "large", activity: 4, shedding: 4, difficulty: 2, look: "cool", fur: "long", personality: ["calm"], info: "북유럽 요정냥 🌲", special: "늠름하고 듬직한 비주얼! 숲의 정령 같은 신비함이 있어." },
+  { name: "브리티시 숏헤어", size: "medium", activity: 2, shedding: 2, difficulty: 1, look: "cute", fur: "short", personality: ["calm"], info: "참을성이 강한 미소냥 🎩", special: "의젓하고 차분해서 혼자서도 잘 지내는 듬직한 매력이 있어." },
+  { name: "아메리칸 숏헤어", size: "medium", activity: 3, shedding: 2, difficulty: 1, look: "smart", fur: "short", personality: ["sociability"], info: "낙천주의자 고양이 🍎", special: "성격 좋기로 소문난 아이! 누구와도 금방 친구가 되지." },
+  { name: "터키시 앙고라", size: "medium", activity: 4, shedding: 3, difficulty: 2, look: "cute", fur: "long", personality: ["activity"], info: "아름다운 귀족냥 ✨", special: "영리하고 자존심이 높지만 너에게만은 특별한 애교를 보여줄걸?" },
+  { name: "스핑크스", size: "medium", activity: 5, shedding: 1, difficulty: 4, look: "cool", fur: "short", personality: ["sociability"], info: "사랑이 가득한 온기 ☀️", special: "털 빠짐 제로! 너의 체온을 느끼며 무릎 위에 있는 걸 좋아해." },
+  { name: "메인쿤", size: "large", activity: 3, shedding: 4, difficulty: 3, look: "cool", fur: "long", personality: ["sociability"], info: "신사적인 거인 🦁", special: "덩치만큼 큰 마음을 가진 친구야. 든든하게 곁을 지켜줄걸?" },
+  { name: "싱가푸라", size: "small", activity: 3, shedding: 1, difficulty: 2, look: "cute", fur: "short", personality: ["sociability"], info: "세상에서 가장 작은 묘종 💎", special: "작고 소중한 너의 요정! 조용히 다가와 뽀뽀해 줄 거야." },
+  { name: "렉스", size: "medium", activity: 4, shedding: 1, difficulty: 3, look: "cute", fur: "curly", personality: ["activity", "sociability"], info: "꼬불꼬불한 털 🌀", special: "털도 덜 빠지고 애교는 만점! 너를 매일 웃게 해줄 거야." },
+  { name: "히말라얀", size: "medium", activity: 1, shedding: 4, difficulty: 3, look: "cute", fur: "long", personality: ["calm"], info: "온순함과 신비로움 ❄️", special: "조용히 너의 발치에서 잠드는 걸 좋아하는 평화로운 친구야." },
+  { name: "소말리", size: "medium", activity: 4, shedding: 2, difficulty: 3, look: "smart", fur: "long", personality: ["activity"], info: "여우를 닮은 꼬리 🦊", special: "너의 움직임을 관찰하고 함께 놀아달라고 조를 거야." },
+  { name: "버먼", size: "medium", activity: 2, shedding: 3, difficulty: 2, look: "cute", fur: "long", personality: ["sociability", "calm"], info: "하얀 발 장갑 특징 🧤", special: "너의 감정을 잘 읽어주는 섬세한 마음을 가진 특별한 냥이야." }
+];
+
+const exoticData = [
+  { name: "햄스터", size: "small", activity: 2, shedding: 2, difficulty: 1, look: "cute", fur: "short", info: "볼따구가 킬포! 🐹", special: "좁은 공간에서도 오밀조밀 잘 지내고, 쳇바퀴 타는 모습이 정말 귀여워!" },
+  { name: "토끼", size: "medium", activity: 3, shedding: 5, difficulty: 3, look: "cute", fur: "long", info: "코 실룩 매력쟁이 🐰", special: "조용하지만 의사 표현이 확실해! 너의 곁을 깡충 지켜줄 보들보들한 단짝이야." },
+  { name: "기니피그", size: "small", activity: 2, shedding: 4, difficulty: 2, look: "cute", fur: "short", info: "꾸잉꾸잉 소리 대장 🐹", special: "겁이 많지만 친해지면 노래를 불러주는 다정한 성격이야." },
+  { name: "고슴도치", size: "small", activity: 1, shedding: 1, difficulty: 3, look: "cute", fur: "short", info: "밤송이 속 따뜻한 마음 🦔", special: "친해지면 가시를 눕히고 배를 보여주는 특별한 교감을 나눌 수 있어." },
+  { name: "페럿", size: "medium", activity: 5, shedding: 3, difficulty: 5, look: "cute", fur: "short", info: "비글미 장난꾸러기 🎢", special: "엄청난 활동량과 호기심! 너의 일상을 웃음으로 꽉 채워줄 거야." },
+  { name: "슈가글라이더", size: "small", activity: 5, shedding: 2, difficulty: 5, look: "cute", fur: "short", info: "비행 다람쥐 애교 만점 ✈️", special: "유대감이 깊어지면 너의 주머니 속에서 안 나오려 하는 사랑둥이야." },
+  { name: "친칠라", size: "small", activity: 4, shedding: 5, difficulty: 4, look: "cute", fur: "long", info: "부드러운 털 끝판왕 🐭", special: "점프력이 대단해! 솜사탕 같은 털을 쓰다듬으면 힐링 그 자체야." },
+  { name: "크레스티드 게코", size: "small", activity: 1, shedding: 1, difficulty: 2, look: "cool", fur: "short", info: "속눈썹 도마뱀 🦎", special: "냄새 없고 산책 필요 없는 최고의 힐링 파트너야." },
+  { name: "비어디 드래곤", size: "medium", activity: 2, shedding: 1, difficulty: 3, look: "cool", fur: "short", info: "온순한 미니 용 🐉", special: "파충류계의 강아지! 너의 어깨 위에서 느긋하게 쉬는 걸 좋아해." },
+  { name: "레오파드 게코", size: "small", activity: 1, shedding: 1, difficulty: 2, look: "cute", fur: "short", info: "웃는 표정 도마뱀 🦎", special: "통통한 꼬리가 매력! 조용히 너의 방 한구석을 지켜줄 거야." },
+  { name: "앵무새", size: "small", activity: 4, shedding: 3, difficulty: 4, look: "smart", fur: "short", info: "수다쟁이 똑똑이 🦜", special: "지능이 아주 높아서 너와 감정도 공유할 수 있는 소중한 대화 상대야." },
+  { name: "거북이", size: "medium", activity: 1, shedding: 1, difficulty: 3, look: "cool", fur: "short", info: "평생 갈 든든 단짝 🐢", special: "너의 성장을 평생 지켜봐 줄 수 있는 긴 수명을 가진 철학자 같아." },
+  { name: "장수풍뎅이", size: "small", activity: 1, shedding: 1, difficulty: 1, look: "cool", fur: "short", info: "곤충계의 전사 🪲", special: "좁은 공간에서 키우기 좋고 생명의 신비함을 관찰할 수 있어." },
+  { name: "금붕어", size: "small", activity: 2, shedding: 1, difficulty: 1, look: "cute", fur: "short", info: "평화로운 물멍 🐠", special: "아름다운 유영 모습은 스트레스를 잊게 해주는 마법 같아." },
+  { name: "우파루파", size: "small", activity: 1, shedding: 1, difficulty: 3, look: "cute", fur: "short", info: "수중 미소 요정 🧜", special: "투명한 바디가 신비로워! 조용히 너를 보며 미소 짓는 것 같아." },
+  { name: "팩맨 개구리", size: "small", activity: 1, shedding: 1, difficulty: 2, look: "cute", fur: "short", info: "동글동글 먹보 🐸", special: "가만히 앉아 먹이를 기다리는 모습이 너의 인내심을 키워줄 거야." },
+  { name: "소라게", size: "small", activity: 2, shedding: 1, difficulty: 2, look: "cool", fur: "short", info: "껍질 여행자 🐚", special: "껍질을 옮겨 타는 신기한 광경을 지켜보는 재미가 쏠쏠해." },
+  { name: "다람쥐", size: "small", activity: 5, shedding: 4, difficulty: 4, look: "cute", fur: "short", info: "뽈뽈거리는 귀요미 🐿️", special: "해바라기씨를 까먹는 뒷모습은 세상에서 제일가는 힐링 포인트야." },
+  { name: "미니피그", size: "large", activity: 4, shedding: 2, difficulty: 4, look: "cute", fur: "short", info: "똑똑한 핑크 코 🐖", special: "너의 감정을 읽고 대답해 주는 듬직한 단짝이 될 거야." },
+  { name: "달팽이", size: "small", activity: 1, shedding: 1, difficulty: 1, look: "cute", fur: "short", info: "관찰 일기 주인공 🐌", special: "천천히 가는 법을 가르쳐주는 조용하고 무던한 친구야." }
+];
+
+const questions = [
+  { key: "activity", text: "🏃 평소 너의 활동 에너지는 어느 정도야?", options: [
+      {v: 1, t: "집에서 뒹굴거리는 게 제일 좋아 🛋️"},
+      {v: 2, t: "가벼운 동네 산책은 즐거워 🚶"},
+      {v: 3, t: "주말에는 예쁜 카페나 공원에 가야지 🌳"},
+      {v: 4, t: "매일 한 시간은 꼭 운동해야 해 🔥"},
+      {v: 5, t: "땀 흘리는 운동이 인생의 낙! 🚴"}
+  ]},
+  { key: "space", text: "🏠 우리가 함께 지낼 곳은 어떤 곳이야?", options: [
+      {v: "apartment_small", t: "아기자기한 원룸이나 빌라 🏢"},
+      {v: "apartment_big", t: "일반적인 아파트나 빌라 🏠"},
+      {v: "house", t: "마당이 있는 넓은 단독 주택 🏡"}
+  ]},
+  { key: "experience", text: "🐶 반려동물을 키워본 적 있어?", options: [
+      {v: 1, t: "완전 처음! 아무것도 모르는 초보야 🙋‍♀️"},
+      {v: 3, t: "예전에 키워봤거나 지식이 조금 있어!"},
+      {v: 5, t: "이미 베테랑! 교육도 자신 있어 😎"}
+  ]},
+  { key: "pref_size", text: "📏 원하는 친구의 크기는 어느 정도야?", options: [
+      {v: "small", t: "품에 쏙 들어오는 작고 소중한 아이 🍼"},
+      {v: "medium", t: "듬직하고 적당한 중간 크기 🐈"},
+      {v: "large", t: "기대면 든든한 커다란 대형 친구 🦁"}
+  ]},
+  { key: "pref_shedding", text: "☁️ 털 빠짐은 어느 정도까지 괜찮아?", options: [
+      {v: 1, t: "옷에 털 붙는 건 시러! 안 빠지는 게 최고 ✨"},
+      {v: 3, t: "관리가 힘들지 않을 정도면 괜찮아"},
+      {v: 5, t: "털은 사랑의 흔적! 빠져도 상관없어 ❤️"}
+  ]},
+  { key: "pref_fur", text: "🧣 어떤 털 스타일이 마음에 들어?", options: [
+      {v: "short", t: "깔끔하고 시원한 짧은 털!"},
+      {v: "long", t: "보들보들 찰랑거리는 긴 털!"},
+      {v: "curly", t: "꼬불꼬불 폭신폭신한 털!"}
+  ]},
+  { key: "pref_look", text: "✨ 댕댕냥의 전체적인 분위기는?", options: [
+      {v: "cute", t: "순둥순둥 보고만 있어도 녹는 귀요미 🍬"},
+      {v: "smart", t: "지적이고 똘똘해 보이는 똑똑이 🎓"},
+      {v: "cool", t: "카리스마 있고 늠름한 멋쟁이 🕶️"}
+  ]},
+  { key: "mbti_ei", text: "🌈 너의 평소 에너지 스타일은?", options: [
+      {v: "E", t: "사람들과 어울려 놀 때 힘이 나! ✨"},
+      {v: "I", t: "혼자만의 시간을 보낼 때 힐링 돼 🏠"}
+  ]},
+  { key: "mbti_tf", text: "💌 고민 있는 친구에게 너는?", options: [
+      {v: "F", t: "공감 먼저! 마음을 다독여줘 💖"},
+      {v: "T", t: "이성적 조언! 해결책을 찾아줘 🛠️"}
+  ]},
+  { key: "budget", text: "💰 케어(미용/건강)에 얼마나 신경 쓸 수 있어?", options: [
+      {v: 1, t: "손이 덜 가고 관리가 쉬운 아이가 좋아!"},
+      {v: 5, t: "매일 빗질하고 공들여 관리해 줄 수 있어! 🎀"}
+  ]}
+];
+
+let mode = ""; 
+let step = -1;
+let user = { personalityPriority: [], wishlist: "" };
+const TOTAL_STEPS = questions.length + 2;
+
+function render() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  const container = document.createElement('div');
+  let modeClass = mode === "dog" ? "dog-mode" : mode === "cat" ? "cat-mode" : "exotic-mode";
+  container.className = 'fade-in ' + modeClass;
+
+  if (step === -1) {
+    container.innerHTML = `
+      <div class="intro-page">
+        <h1>🐾 내 운명의 펫 찾기</h1>
+        <p>너의 운명은 강아지? 고양이? 아니면 이색동물?<br>정밀 분석으로 운명 펫을 찾아줄게! ✨</p>
+        <div class="mode-selection">
+          <div class="mode-card dog" onclick="start('dog')"><h2>🐶</h2><b>강아지 찾기</b></div>
+          <div class="mode-card cat" onclick="start('cat')"><h2>🐱</h2><b>고양이 찾기</b></div>
+          <div class="mode-card exotic" onclick="start('exotic')"><h2>🦎</h2><b>이색동물 찾기</b></div>
+        </div>
+      </div>`;
+  } else if (step < questions.length) {
+    let q = questions[step];
+    container.innerHTML = `<div class="question"><span style="font-size:13px; opacity:0.8;">STEP ${step+1}/${TOTAL_STEPS}</span><br>${q.text}</div>`;
+    q.options.forEach(o => { 
+        const isSelected = user[q.key] === o.v ? 'selected' : '';
+        container.innerHTML += `<div class="option ${isSelected}" onclick='select("${o.v}")'>${o.t}</div>`; 
+    });
+  } else if (step === questions.length) {
+    container.innerHTML = `<div class="question"><span style="font-size:13px; opacity:0.8;">STEP 11/12</span><br>💖 중요하게 생각하는 특징 3가지 골라줘!</div>`;
+    let personalities = [];
+    if(mode === "dog") personalities = [{v: "affectionate", t: "애교 ❤️"}, {v: "playful", t: "장난 😆"}, {v: "calm", t: "차분 😌"}, {v: "independent", t: "독립 🐺"}];
+    else if(mode === "cat") personalities = [{v: "sociability", t: "사교성 ❤️"}, {v: "activity", t: "활동성 😆"}, {v: "grooming", t: "털관리 🧹"}, {v: "difficulty", t: "수다 🗣️"}];
+    else personalities = [{v: "cute", t: "귀여움 🍬"}, {v: "cool", t: "멋있음 🕶️"}, {v: "calm", t: "조용함 😌"}, {v: "smart", t: "똑똑함 🎓"}];
+    
+    personalities.forEach(p => {
+      const idx = user.personalityPriority.indexOf(p.v);
+      container.innerHTML += `<div class="option ${idx !== -1 ? 'selected' : ''}" onclick='togglePriority("${p.v}")'>${idx !== -1 ? (idx+1)+'. ' : ''}${p.t}</div>`;
+    });
+    container.innerHTML += `<button onclick="nextStep()" ${user.personalityPriority.length < 3 ? 'disabled style="opacity:0.5"' : ''}>다음 단계 ✨</button>`;
+  } else if (step === questions.length + 1) {
+    let modeText = mode === "dog" ? "강아지" : mode === "cat" ? "고양이" : "이색동물";
+    container.innerHTML = `<div class="question"><span style="font-size:13px; opacity:0.8;">STEP 12/12</span><br>⭐ 찜해뒀던 ${modeText}는 누구야?</div><div class="wish-grid">`;
+    let currentData = mode === "dog" ? dogData : mode === "cat" ? catData : exoticData;
+    currentData.forEach(d => {
+      container.innerHTML += `<div class="option wish-item ${user.wishlist === d.name ? 'selected' : ''}" onclick='selectWish("${d.name}")'>${d.name}</div>`;
+    });
+    container.innerHTML += `</div><button onclick="nextStep()" ${!user.wishlist ? 'disabled style="opacity:0.5"' : ''}>결과 분석하기 🌈</button>`;
+  } else { calcResult(container); }
+  content.appendChild(container);
+}
+
+function start(m) { mode = m; step = 0; render(); }
+function nextStep() { step++; render(); }
+function select(v) { user[questions[step].key] = v; setTimeout(nextStep, 300); }
+function selectWish(name) { user.wishlist = name; render(); }
+function togglePriority(v) {
+  const idx = user.personalityPriority.indexOf(v);
+  if (idx !== -1) user.personalityPriority.splice(idx, 1);
+  else if (user.personalityPriority.length < 3) user.personalityPriority.push(v);
+  render();
+}
+function restart() { mode = ""; step = -1; user = { personalityPriority: [], wishlist: "" }; render(); }
+
+// [복사하기 필살 로직]
+function copyToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  textArea.style.top = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    const successful = document.execCommand('copy');
+    if(successful) {
+      alert("나의 결과가 복사되었어! 친구들에게 카톡으로 자랑해봐! 💌");
+    } else {
+      alert("복사에 실패했어.. 다시 시도해줄래? 😭");
+    }
+  } catch (err) {
+    alert("오류가 발생했어! 직접 캡쳐해서 공유해줘! 😭");
+  }
+  document.body.removeChild(textArea);
+}
+
+function getScore(d) {
+  let s = 50;
+  if (user.mbti_ei === "E" && d.activity >= 4) s += 8;
+  if (user.mbti_ei === "I" && d.activity <= 2) s += 8;
+  if (user.mbti_tf === "F") s += 5;
+  if (user.mbti_tf === "T" && d.look === "smart") s += 5;
+  if (user.experience === 1 && d.difficulty >= 4) s -= 15;
+  if (user.space === "apartment_small") { s -= (d.size === "large" ? 35 : (d.size === "medium" ? 15 : 0)); if (d.activity >= 4) s -= 10; }
+  if (user.pref_size === d.size) s += 15;
+  if (user.pref_look === d.look) s += 10;
+  s -= (Math.abs(user.activity - d.activity) * 6);
+  user.personalityPriority.forEach((p, i) => { 
+      if (d.personality && d.personality.includes(p)) s += (15 - (i * 5)); 
+      if (d[p] && d[p] >= 3) s += (15 - (i * 5));
+      if (d.look === p) s += (15 - (i * 5));
+  });
+  return Math.max(0, Math.min(Math.round(s + (Math.random() * 5)), 100));
+}
+
+function getReason(d) {
+    let r = [];
+    r.push(d.special);
+    if (Math.abs(user.activity - d.activity) <= 1) r.push("너랑 에너지가 정말 비슷해서 발맞추기 딱이야!");
+    const matched = user.personalityPriority.find(p => (d.personality && d.personality.includes(p)) || (d[p] && d[p] >= 3) || d.look === p);
+    if (matched) r.push(`너가 바라던 매력 포인트를 쏙 빼닮았어 ✨`);
+    return [...new Set(r)].slice(0, 3).join(' 게다가 ');
+}
+
+function calcResult(container) {
+  let currentData = mode === "dog" ? dogData : mode === "cat" ? catData : exoticData;
+  let res = currentData.map(d => ({ ...d, score: getScore(d) }));
+  res.sort((a, b) => b.score - a.score);
+  
+  // [수정] 공유용 링크 추가 (배포 후 주소로 바꾸면 돼!)
+  let myLink = "[여기에 너의 웹사이트 주소를 적어줘!]"; 
+  let shareText = `[🐾 나의 운명 펫 매칭 결과]\n\n나의 운명 1위는.. ${res[0].name}(${res[0].score}%)! ✨\n2위는 ${res[1].name}, 3위는 ${res[2].name}였어!\n\n너도 궁금하다면 지금 확인해봐! 👇\n${myLink}`;
+
+  container.innerHTML = `<div class="question">💖 너랑 찰떡궁합 리포트야!</div>`;
+  res.slice(0, 3).forEach((d, idx) => {
+    container.innerHTML += `<div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0">${idx+1}. ${d.name}</h3><span style="font-weight:bold;">${d.score}%</span>
+      </div>
+      <div class="bar"><div class="fill" style="width:${d.score}%"></div></div>
+      <div class="match-box"><b>✨ 왜 너랑 찰떡이냐면!</b><br>${getReason(d)}</div>
+    </div>`;
+  });
+  
+  const wish = res.find(d => d.name === user.wishlist);
+  if (wish) {
+    container.innerHTML += `<div class="card" style="margin-top:25px; border-left-color:var(--accent);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; opacity:0.8;">⭐ 찜했던 결과: ${wish.name}</span>
+        <span style="font-weight:bold; color:var(--accent);">${wish.score}%</span>
+      </div>
+      <div class="bar"><div class="fill" style="width:${wish.score}%"></div></div>
+      <div class="match-box">${wish.score >= 85 ? '와! 찜한 친구랑 완전 운명이야 ❤️' : '찜한 친구와는 맞춰갈 시간이 필요해!'}</div>
+    </div>`;
+  }
+  
+  const shareBtn = document.createElement("button");
+  shareBtn.style.background = "#334155";
+  shareBtn.style.boxShadow = "none";
+  shareBtn.style.marginTop = "20px";
+  shareBtn.innerText = "결과 복사해서 친구에게 자랑하기 💌";
+  shareBtn.onclick = function() { copyToClipboard(shareText); };
+  container.appendChild(shareBtn);
+
+  const restartBtn = document.createElement("button");
+  restartBtn.innerText = "처음으로 돌아가기 🔄";
+  restartBtn.onclick = restart;
+  container.appendChild(restartBtn);
+}
+render();
+</script>
+</body>
+</html>
